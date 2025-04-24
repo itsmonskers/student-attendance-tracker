@@ -11,6 +11,7 @@ import Attendance from "@/pages/attendance";
 import Reports from "@/pages/reports";
 import Classes from "@/pages/classes";
 import Settings from "@/pages/settings";
+import StudentProfile from "@/pages/student-profile";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/students" component={Students} />
+        <Route path="/students/:id" component={StudentProfile} />
         <Route path="/attendance" component={Attendance} />
         <Route path="/reports" component={Reports} />
         <Route path="/classes" component={Classes} />

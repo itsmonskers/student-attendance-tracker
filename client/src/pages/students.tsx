@@ -72,6 +72,9 @@ export default function Students() {
   const handleDeleteStudent = (student: Student) => {
     if (confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
       deleteMutation.mutate(student.id);
+      // Also invalidate dashboard stats and activities after deletion
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
     }
   };
   
