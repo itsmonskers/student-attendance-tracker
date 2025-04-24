@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { AvatarWithText } from "@/components/ui/avatar-with-text";
@@ -20,13 +21,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash, Pencil, Eye } from "lucide-react";
+import { Plus, Trash, Pencil, Eye, UserSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Student } from "@shared/schema";
 import StudentForm from "@/components/student-form";
 
 export default function Students() {
+  const [, setLocation] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -144,8 +146,8 @@ export default function Students() {
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Classes</SelectItem>
-                  {classes?.map((cls: any) => (
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {Array.isArray(classes) && classes.map((cls: any) => (
                     <SelectItem key={cls.id} value={cls.name}>
                       {cls.name}
                     </SelectItem>
@@ -250,6 +252,17 @@ export default function Students() {
                     className="text-primary hover:text-primary-dark"
                   >
                     <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLocation(`/students/${row.id}`);
+                    }}
+                    className="text-primary hover:text-primary-dark"
+                  >
+                    <UserSquare className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -361,6 +374,16 @@ export default function Students() {
               <div className="mt-6 flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                   Close
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewDialogOpen(false);
+                    setLocation(`/students/${selectedStudent.id}`);
+                  }}
+                  className="text-primary"
+                >
+                  <UserSquare className="mr-2 h-4 w-4" /> View Profile
                 </Button>
                 <Button
                   onClick={() => {
