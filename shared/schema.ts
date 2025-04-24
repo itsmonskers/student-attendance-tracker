@@ -2,6 +2,17 @@ import { pgTable, text, serial, integer, boolean, timestamp, date } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// User table
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+});
+
 // Student table
 export const students = pgTable("students", {
   id: serial("id").primaryKey(),
@@ -60,6 +71,9 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
 });
 
 // Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 

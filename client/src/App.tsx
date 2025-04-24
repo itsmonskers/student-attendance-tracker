@@ -12,32 +12,77 @@ import Reports from "@/pages/reports";
 import Classes from "@/pages/classes";
 import Settings from "@/pages/settings";
 import StudentProfile from "@/pages/student-profile";
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/students" component={Students} />
-        <Route path="/students/:id" component={StudentProfile} />
-        <Route path="/attendance" component={Attendance} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/classes" component={Classes} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      
+      <ProtectedRoute path="/" component={() => (
+        <Layout>
+          <Dashboard />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/dashboard" component={() => (
+        <Layout>
+          <Dashboard />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/students" component={() => (
+        <Layout>
+          <Students />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/students/:id" component={() => (
+        <Layout>
+          <StudentProfile />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/attendance" component={() => (
+        <Layout>
+          <Attendance />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/reports" component={() => (
+        <Layout>
+          <Reports />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/classes" component={() => (
+        <Layout>
+          <Classes />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/settings" component={() => (
+        <Layout>
+          <Settings />
+        </Layout>
+      )} />
+      
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
