@@ -64,10 +64,12 @@ export default function Sidebar({ isOpen, currentPath }: SidebarProps) {
         <div className="p-4 border-b">
           <div className="flex items-center">
             <div className="h-10 w-10 rounded-full bg-primary-light flex items-center justify-center text-white font-semibold text-sm">
-              {user.username.substring(0, 2).toUpperCase()}
+              {user.fullName 
+                ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                : user.username.substring(0, 2).toUpperCase()}
             </div>
             <div className="ml-3">
-              <p className="font-medium">{user.username}</p>
+              <p className="font-medium">{user.fullName || user.username}</p>
               <p className="text-xs text-neutral-500">Administrator</p>
             </div>
           </div>

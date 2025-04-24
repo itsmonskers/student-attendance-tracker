@@ -78,9 +78,11 @@ export default function Header({ title, toggleSidebar }: HeaderProps) {
                     className="flex items-center space-x-2 text-white hover:bg-primary-dark hover:text-white"
                   >
                     <div className="h-8 w-8 rounded-full bg-primary-dark flex items-center justify-center">
-                      {user.username.substring(0, 2).toUpperCase()}
+                      {user.fullName 
+                        ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                        : user.username.substring(0, 2).toUpperCase()}
                     </div>
-                    <span className="hidden md:inline">{user.username}</span>
+                    <span className="hidden md:inline">{user.fullName || user.username}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
