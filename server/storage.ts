@@ -1,12 +1,20 @@
+import session from "express-session";
+import createMemoryStore from "memorystore";
 import { 
+  User, InsertUser,
   Student, InsertStudent, 
   Class, InsertClass, 
   Attendance, InsertAttendance,
   Activity, InsertActivity,
-  students, classes, attendance, activities
+  users, students, classes, attendance, activities
 } from "@shared/schema";
 
 export interface IStorage {
+  // User methods
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(userData: InsertUser): Promise<User>;
+
   // Student methods
   getStudents(): Promise<Student[]>;
   getStudent(id: number): Promise<Student | undefined>;
@@ -47,32 +55,72 @@ export interface IStorage {
     absent: number;
     late: number;
   }[]>;
+  
+  // Session store for auth
+  sessionStore: session.SessionStore;
 }
 
 export class MemStorage implements IStorage {
+  private users: Map<number, User>;
   private students: Map<number, Student>;
   private classes: Map<number, Class>;
   private attendance: Map<number, Attendance>;
   private activities: Map<number, Activity>;
   
+  private userIdCounter: number;
   private studentIdCounter: number;
   private classIdCounter: number;
   private attendanceIdCounter: number;
   private activityIdCounter: number;
+  
+  public sessionStore: session.SessionStore;
 
   constructor() {
+    this.users = new Map();
     this.students = new Map();
     this.classes = new Map();
     this.attendance = new Map();
     this.activities = new Map();
     
+    this.userIdCounter = 1;
     this.studentIdCounter = 1;
     this.classIdCounter = 1;
     this.attendanceIdCounter = 1;
     this.activityIdCounter = 1;
     
+    // Initialize session store
+    const MemoryStore = createMemoryStore(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    });
+    
     // Add some default classes
     this.seedClasses();
+  }
+  
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      user => user.username === username
+    );
+  }
+  
+  async createUser(userData: InsertUser): Promise<User> {
+    const id = this.userIdCounter++;
+    const user: User = { ...userData, id };
+    this.users.set(id, user);
+    
+    // Log activity
+    await this.createActivity({
+      message: `New user ${user.username} was created.`,
+      type: 'user',
+    });
+    
+    return user;
   }
   
   private seedClasses() {

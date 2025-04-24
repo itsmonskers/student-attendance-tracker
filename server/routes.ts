@@ -9,8 +9,11 @@ import {
   attendanceFormSchema,
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication routes and middleware
+  setupAuth(app);
   // Student routes
   app.get("/api/students", async (req: Request, res: Response) => {
     try {
