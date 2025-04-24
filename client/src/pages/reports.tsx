@@ -52,11 +52,15 @@ export default function Reports() {
   const { data: attendanceStats, isLoading: statsLoading } = useQuery({
     queryKey: [
       "/api/reports/attendance", 
-      { startDate: dateRange.startDate, endDate: dateRange.endDate, className: selectedClass }
+      { 
+        startDate: dateRange.startDate, 
+        endDate: dateRange.endDate, 
+        className: selectedClass !== 'all' ? selectedClass : undefined 
+      }
     ],
     queryFn: async () => {
       const url = `/api/reports/attendance?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}${
-        selectedClass ? `&className=${selectedClass}` : ""
+        selectedClass && selectedClass !== 'all' ? `&className=${selectedClass}` : ""
       }`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch attendance statistics");
@@ -70,7 +74,7 @@ export default function Reports() {
     queryKey: ["/api/students"],
     select: (data) => {
       // Filter by class if selected
-      if (selectedClass) {
+      if (selectedClass && selectedClass !== 'all') {
         return data.filter((student) => student.className === selectedClass);
       }
       return data;
@@ -197,8 +201,8 @@ export default function Reports() {
                     <SelectValue placeholder="All Classes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Classes</SelectItem>
-                    {classes?.map((cls: any) => (
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {Array.isArray(classes) && classes.map((cls: any) => (
                       <SelectItem key={cls.id} value={cls.name}>
                         {cls.name}
                       </SelectItem>
