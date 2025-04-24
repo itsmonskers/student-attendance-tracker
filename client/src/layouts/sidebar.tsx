@@ -5,9 +5,13 @@ import {
   CheckSquare,
   Settings,
   UserSquare2,
-  LayoutDashboard
+  LayoutDashboard,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -26,17 +30,51 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, currentPath }: SidebarProps) {
   // Normalize currentPath
   const normalizedPath = currentPath === "/" ? "/dashboard" : currentPath;
+  const { logoutMutation, user } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast({
+          title: "Logged out successfully",
+          description: "You have been logged out of the system",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Logout failed",
+          description: error.message || "Failed to log out",
+          variant: "destructive",
+        });
+      }
+    });
+  };
 
   return (
     <aside 
       className={cn(
-        "bg-white w-64 shadow-md transition-all duration-300 overflow-y-auto",
+        "bg-white w-64 shadow-md transition-all duration-300 overflow-y-auto flex flex-col h-full",
         isOpen 
           ? "block absolute inset-y-0 left-0 z-40 lg:relative lg:block" 
           : "hidden lg:block"
       )}
     >
-      <nav className="mt-5 px-2">
+      {user && (
+        <div className="p-4 border-b">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-primary-light flex items-center justify-center text-white font-semibold text-sm">
+              {user.username.substring(0, 2).toUpperCase()}
+            </div>
+            <div className="ml-3">
+              <p className="font-medium">{user.username}</p>
+              <p className="text-xs text-neutral-500">Administrator</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <nav className="mt-5 px-2 flex-grow">
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -53,6 +91,18 @@ export default function Sidebar({ isOpen, currentPath }: SidebarProps) {
           </Link>
         ))}
       </nav>
+      
+      <div className="p-4 border-t mt-auto">
+        <Button 
+          variant="ghost" 
+          className="w-full text-left flex items-center text-destructive hover:text-destructive hover:bg-red-50"
+          onClick={handleLogout}
+          disabled={logoutMutation.isPending}
+        >
+          <LogOut className="mr-3 h-5 w-5" />
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
+        </Button>
+      </div>
     </aside>
   );
 }

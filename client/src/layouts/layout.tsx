@@ -27,8 +27,7 @@ export default function Layout({ children }: LayoutProps) {
     <div className="flex flex-col h-screen overflow-hidden">
       <Header 
         title="Student Attendance System" 
-        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-        user={{ name: "Admin User" }}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={isSidebarOpen} currentPath={location} />
