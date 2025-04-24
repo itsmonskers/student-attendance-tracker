@@ -91,11 +91,11 @@ export default function Students() {
   const filteredStudents = students ? students.filter(student => {
     let matches = true;
     
-    if (classFilter && student.className !== classFilter) {
+    if (classFilter && classFilter !== 'all' && student.className !== classFilter) {
       matches = false;
     }
     
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== 'all') {
       const isActive = student.active !== false;
       if ((statusFilter === 'active' && !isActive) || (statusFilter === 'inactive' && isActive)) {
         matches = false;
@@ -159,7 +159,7 @@ export default function Students() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
