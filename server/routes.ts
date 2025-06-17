@@ -149,6 +149,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/classes/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid class ID" });
+      }
+      
+      const existingClass = await storage.getClass(id);
+      if (!existingClass) {
+        return res.status(404).json({ message: "Class not found" });
+      }
+      
+      const validatedData = insertClassSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const errorMessage = fromZodError(validatedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      const updatedClass = await storage.updateClass(id, validatedData.data);
+      return res.json(updatedClass);
+    } catch (error) {
+      console.error("Failed to update class:", error);
+      return res.status(500).json({ message: "Failed to update class" });
+    }
+  });
+
+  app.delete("/api/classes/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid class ID" });
+      }
+      
+      const success = await storage.deleteClass(id);
+      if (!success) {
+        return res.status(404).json({ message: "Class not found" });
+      }
+      
+      return res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete class:", error);
+      return res.status(500).json({ message: "Failed to delete class" });
+    }
+  });
+
   // Attendance routes
   app.get("/api/attendance", async (req: Request, res: Response) => {
     try {

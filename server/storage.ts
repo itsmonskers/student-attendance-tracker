@@ -27,6 +27,8 @@ export interface IStorage {
   getClasses(): Promise<Class[]>;
   getClass(id: number): Promise<Class | undefined>;
   createClass(classData: InsertClass): Promise<Class>;
+  updateClass(id: number, classData: Partial<Class>): Promise<Class | undefined>;
+  deleteClass(id: number): Promise<boolean>;
   
   // Attendance methods
   getAttendance(filters?: { date?: string; studentId?: number; className?: string }): Promise<(Attendance & { student: Student })[]>;
@@ -224,6 +226,43 @@ export class MemStorage implements IStorage {
     });
     
     return newClass;
+  }
+
+  async updateClass(id: number, classData: Partial<Class>): Promise<Class | undefined> {
+    const existingClass = this.classes.get(id);
+    if (!existingClass) {
+      return undefined;
+    }
+
+    const updatedClass = { ...existingClass, ...classData };
+    this.classes.set(id, updatedClass);
+    
+    // Log activity
+    await this.createActivity({
+      message: `Class ${updatedClass.name} was updated.`,
+      type: 'class',
+    });
+    
+    return updatedClass;
+  }
+
+  async deleteClass(id: number): Promise<boolean> {
+    const classToDelete = this.classes.get(id);
+    if (!classToDelete) {
+      return false;
+    }
+    
+    const result = this.classes.delete(id);
+    
+    // Log activity if successful
+    if (result) {
+      await this.createActivity({
+        message: `Class ${classToDelete.name} was deleted.`,
+        type: 'class',
+      });
+    }
+    
+    return result;
   }
 
   // Attendance methods

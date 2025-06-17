@@ -22,8 +22,10 @@ import { Class } from "@shared/schema";
 
 export default function Classes() {
   const [isAddClassDialogOpen, setIsAddClassDialogOpen] = useState(false);
+  const [isEditClassDialogOpen, setIsEditClassDialogOpen] = useState(false);
   const [className, setClassName] = useState("");
   const [classDescription, setClassDescription] = useState("");
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -61,6 +63,52 @@ export default function Classes() {
       });
     },
   });
+
+  // Update class mutation
+  const updateClassMutation = useMutation({
+    mutationFn: async ({ id, classData }: { id: number; classData: { name: string; description: string } }) => {
+      return apiRequest("PUT", `/api/classes/${id}`, classData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/classes"] });
+      setIsEditClassDialogOpen(false);
+      setEditingClass(null);
+      setClassName("");
+      setClassDescription("");
+      toast({
+        title: "Class Updated",
+        description: "The class has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update class: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete class mutation
+  const deleteClassMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/classes/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/classes"] });
+      toast({
+        title: "Class Deleted",
+        description: "The class has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete class: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    },
+  });
   
   // Group students by class
   const studentsByClass = students
@@ -88,6 +136,41 @@ export default function Classes() {
       name: className,
       description: classDescription,
     });
+  };
+
+  // Handle edit class
+  const handleEditClass = (cls: Class) => {
+    setEditingClass(cls);
+    setClassName(cls.name);
+    setClassDescription(cls.description || "");
+    setIsEditClassDialogOpen(true);
+  };
+
+  // Handle update class
+  const handleUpdateClass = () => {
+    if (!className.trim() || !editingClass) {
+      toast({
+        title: "Error",
+        description: "Class name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateClassMutation.mutate({
+      id: editingClass.id,
+      classData: {
+        name: className,
+        description: classDescription,
+      },
+    });
+  };
+
+  // Handle delete class
+  const handleDeleteClass = (cls: Class) => {
+    if (confirm(`Are you sure you want to delete "${cls.name}"?`)) {
+      deleteClassMutation.mutate(cls.id);
+    }
   };
   
   return (
@@ -125,10 +208,21 @@ export default function Classes() {
                       students
                     </div>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEditClass(cls)}
+                        disabled={updateClassMutation.isPending}
+                      >
                         <Pencil className="h-4 w-4 mr-1" /> Edit
                       </Button>
-                      <Button size="sm" variant="outline" className="text-destructive">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => handleDeleteClass(cls)}
+                        disabled={deleteClassMutation.isPending}
+                      >
                         <Trash className="h-4 w-4 mr-1" /> Delete
                       </Button>
                     </div>
@@ -246,7 +340,11 @@ export default function Classes() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsAddClassDialogOpen(false)}
+              onClick={() => {
+                setIsAddClassDialogOpen(false);
+                setClassName("");
+                setClassDescription("");
+              }}
             >
               Cancel
             </Button>
@@ -255,6 +353,58 @@ export default function Classes() {
               disabled={createClassMutation.isPending}
             >
               {createClassMutation.isPending ? "Creating..." : "Create Class"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Class Dialog */}
+      <Dialog open={isEditClassDialogOpen} onOpenChange={setIsEditClassDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Class</DialogTitle>
+            <DialogDescription>
+              Update the class information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-class-name">Class Name</Label>
+              <Input
+                id="edit-class-name"
+                placeholder="e.g. Class 10-A"
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-class-description">Description (Optional)</Label>
+              <Textarea
+                id="edit-class-description"
+                placeholder="Enter a description for this class"
+                value={classDescription}
+                onChange={(e) => setClassDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditClassDialogOpen(false);
+                setEditingClass(null);
+                setClassName("");
+                setClassDescription("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateClass}
+              disabled={updateClassMutation.isPending}
+            >
+              {updateClassMutation.isPending ? "Updating..." : "Update Class"}
             </Button>
           </DialogFooter>
         </DialogContent>
