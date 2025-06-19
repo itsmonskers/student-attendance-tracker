@@ -13,12 +13,19 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const navItems = [
+const teacherNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/students", icon: UserSquare2, label: "Students" },
   { href: "/attendance", icon: CheckSquare, label: "Attendance" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
   { href: "/classes", icon: BookOpen, label: "Classes" },
+  { href: "/settings", icon: Settings, label: "Settings" },
+];
+
+const studentNavItems = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "My Dashboard" },
+  { href: "/attendance", icon: CheckSquare, label: "My Attendance" },
+  { href: "/classes", icon: BookOpen, label: "My Classes" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -70,14 +77,14 @@ export default function Sidebar({ isOpen, currentPath }: SidebarProps) {
             </div>
             <div className="ml-3">
               <p className="font-medium">{user.fullName || user.username}</p>
-              <p className="text-xs text-neutral-500">Administrator</p>
+              <p className="text-xs text-neutral-500">{user.role === "student" ? "Student" : "Teacher"}</p>
             </div>
           </div>
         </div>
       )}
       
       <nav className="mt-5 px-2 flex-grow">
-        {navItems.map((item) => (
+        {(user?.role === "student" ? studentNavItems : teacherNavItems).map((item) => (
           <Link
             key={item.href}
             href={item.href}

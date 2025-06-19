@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Layout from "@/layouts/layout";
-import Dashboard from "@/pages/dashboard";
+import RoleBasedDashboard from "@/components/role-based-dashboard";
 import Students from "@/pages/students";
 import Attendance from "@/pages/attendance";
 import Reports from "@/pages/reports";
@@ -15,6 +15,7 @@ import StudentProfile from "@/pages/student-profile";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import { TeacherRoute } from "./lib/teacher-route";
 
 function Router() {
   return (
@@ -23,17 +24,17 @@ function Router() {
       
       <ProtectedRoute path="/" component={() => (
         <Layout>
-          <Dashboard />
+          <RoleBasedDashboard />
         </Layout>
       )} />
       
       <ProtectedRoute path="/dashboard" component={() => (
         <Layout>
-          <Dashboard />
+          <RoleBasedDashboard />
         </Layout>
       )} />
       
-      <ProtectedRoute path="/students" component={() => (
+      <TeacherRoute path="/students" component={() => (
         <Layout>
           <Students />
         </Layout>
@@ -51,7 +52,7 @@ function Router() {
         </Layout>
       )} />
       
-      <ProtectedRoute path="/reports" component={() => (
+      <TeacherRoute path="/reports" component={() => (
         <Layout>
           <Reports />
         </Layout>

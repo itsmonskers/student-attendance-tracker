@@ -5,11 +5,11 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends User {}
+    interface User extends SelectUser {}
   }
 }
 
@@ -76,10 +76,18 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const user = await storage.createUser({
+      // Ensure role defaults to student if not provided
+      const userData = {
         ...req.body,
         password: await hashPassword(req.body.password),
-      });
+        role: req.body.role || "student", // Default to student
+        email: req.body.email || null,
+        studentId: req.body.studentId || null,
+        className: req.body.className || null,
+        profileImage: null,
+      };
+
+      const user = await storage.createUser(userData);
 
       req.login(user, (err) => {
         if (err) return next(err);
