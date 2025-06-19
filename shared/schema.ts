@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
-  role: text("role").notNull().default("student"), // 'student' or 'teacher'
+  role: text("role").notNull().default("student"), // 'student', 'teacher', or 'admin'
   profileImage: text("profile_image"),
   email: text("email"),
   studentId: text("student_id"),

@@ -76,6 +76,19 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
+      // Handle admin login via fixed credentials
+      if (req.body.username === "admin.access@school.com" && req.body.password === "admin123") {
+        const adminUser = await storage.getUserByUsername("admin.access@school.com");
+        if (adminUser) {
+          req.login(adminUser, (err) => {
+            if (err) return next(err);
+            const { password, ...userWithoutPassword } = adminUser;
+            return res.status(200).json(userWithoutPassword);
+          });
+          return;
+        }
+      }
+
       // Ensure role defaults to student if not provided
       const userData = {
         ...req.body,

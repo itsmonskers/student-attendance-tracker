@@ -109,6 +109,9 @@ export class MemStorage implements IStorage {
     
     // Add some default classes
     this.seedClasses();
+    
+    // Create fixed admin account
+    this.seedAdminAccount();
   }
   
   // User methods
@@ -158,6 +161,25 @@ export class MemStorage implements IStorage {
     defaultClasses.forEach(cls => {
       this.createClass(cls);
     });
+  }
+
+  private seedAdminAccount() {
+    // Create fixed admin account with email: admin.access@school.com, password: admin123
+    // Note: In production, this should use proper password hashing
+    const adminUser: User = {
+      id: 999, // Fixed ID for admin
+      username: 'admin.access@school.com',
+      password: 'admin123', // This will be hashed by the auth system
+      fullName: 'System Administrator',
+      role: 'admin',
+      email: 'admin.access@school.com',
+      studentId: null,
+      className: null,
+      profileImage: null,
+    };
+    
+    this.users.set(999, adminUser);
+    this.userIdCounter = Math.max(this.userIdCounter, 1000); // Ensure no conflicts
   }
 
   // Student methods

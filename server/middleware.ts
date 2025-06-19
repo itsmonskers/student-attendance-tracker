@@ -27,8 +27,8 @@ export function requireOwnershipOrTeacher(req: Request, res: Response, next: Nex
     return res.status(401).json({ message: "Authentication required" });
   }
   
-  // Teachers can access all data
-  if (req.user?.role === "teacher") {
+  // Teachers and admins can access all data
+  if (req.user?.role === "teacher" || req.user?.role === "admin") {
     return next();
   }
   
