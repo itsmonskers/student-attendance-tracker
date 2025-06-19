@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth, loginSchema, registerSchema } from "@/hooks/use-auth";
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -34,6 +35,10 @@ export default function AuthPage() {
       username: "",
       password: "",
       fullName: "",
+      role: "student",
+      email: "",
+      studentId: "",
+      className: "",
     },
   });
 
@@ -173,6 +178,80 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={registerForm.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Role</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select your role" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="student">Student</SelectItem>
+                              <SelectItem value="teacher">Teacher</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="Enter your email"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {registerForm.watch("role") === "student" && (
+                      <>
+                        <FormField
+                          control={registerForm.control}
+                          name="studentId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Student ID</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter your student ID"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="className"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Class</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter your class name"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
                     <Button
                       type="submit"
                       className="w-full"

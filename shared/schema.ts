@@ -8,10 +8,32 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
+  role: text("role").notNull().default("student"), // 'student' or 'teacher'
+  profileImage: text("profile_image"),
+  email: text("email"),
+  studentId: text("student_id"),
+  className: text("class_name"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
+});
+
+// File uploads table
+export const files = pgTable("files", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimetype: text("mimetype").notNull(),
+  size: integer("size").notNull(),
+  uploadedBy: integer("uploaded_by").notNull(),
+  uploadDate: timestamp("upload_date").defaultNow(),
+  filePath: text("file_path").notNull(),
+});
+
+export const insertFileSchema = createInsertSchema(files).omit({
+  id: true,
+  uploadDate: true,
 });
 
 // Student table
@@ -74,6 +96,9 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type File = typeof files.$inferSelect;
+export type InsertFile = z.infer<typeof insertFileSchema>;
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;

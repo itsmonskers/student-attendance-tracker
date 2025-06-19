@@ -6,7 +6,8 @@ import {
   Class, InsertClass, 
   Attendance, InsertAttendance,
   Activity, InsertActivity,
-  users, students, classes, attendance, activities
+  File, InsertFile,
+  users, students, classes, attendance, activities, files
 } from "@shared/schema";
 
 export interface IStorage {
@@ -58,6 +59,12 @@ export interface IStorage {
     late: number;
   }[]>;
   
+  // File methods
+  createFile(fileData: InsertFile): Promise<File>;
+  getFile(id: number): Promise<File | undefined>;
+  getFilesByUser(userId: number): Promise<File[]>;
+  deleteFile(id: number): Promise<boolean>;
+  
   // Session store for auth
   sessionStore: session.SessionStore;
 }
@@ -68,12 +75,14 @@ export class MemStorage implements IStorage {
   private classes: Map<number, Class>;
   private attendance: Map<number, Attendance>;
   private activities: Map<number, Activity>;
+  private files: Map<number, File>;
   
   private userIdCounter: number;
   private studentIdCounter: number;
   private classIdCounter: number;
   private attendanceIdCounter: number;
   private activityIdCounter: number;
+  private fileIdCounter: number;
   
   public sessionStore: session.SessionStore;
 
@@ -83,12 +92,14 @@ export class MemStorage implements IStorage {
     this.classes = new Map();
     this.attendance = new Map();
     this.activities = new Map();
+    this.files = new Map();
     
     this.userIdCounter = 1;
     this.studentIdCounter = 1;
     this.classIdCounter = 1;
     this.attendanceIdCounter = 1;
     this.activityIdCounter = 1;
+    this.fileIdCounter = 1;
     
     // Initialize session store
     const MemoryStore = createMemoryStore(session);
@@ -475,6 +486,51 @@ export class MemStorage implements IStorage {
         present,
         absent,
         late
+      });
+    }
+    
+    return result;
+  }
+
+  // File methods
+  async createFile(fileData: InsertFile): Promise<File> {
+    const id = this.fileIdCounter++;
+    const file: File = { 
+      ...fileData, 
+      id,
+      uploadDate: new Date()
+    };
+    this.files.set(id, file);
+    
+    // Log activity
+    await this.createActivity({
+      message: `File "${file.originalName}" was uploaded.`,
+      type: 'file',
+    });
+    
+    return file;
+  }
+
+  async getFile(id: number): Promise<File | undefined> {
+    return this.files.get(id);
+  }
+
+  async getFilesByUser(userId: number): Promise<File[]> {
+    return Array.from(this.files.values()).filter(file => file.uploadedBy === userId);
+  }
+
+  async deleteFile(id: number): Promise<boolean> {
+    const file = this.files.get(id);
+    if (!file) {
+      return false;
+    }
+    
+    const result = this.files.delete(id);
+    
+    if (result) {
+      await this.createActivity({
+        message: `File "${file.originalName}" was deleted.`,
+        type: 'file',
       });
     }
     

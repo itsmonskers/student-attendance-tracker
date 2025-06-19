@@ -5,17 +5,24 @@ import {
   insertStudentSchema, 
   insertClassSchema, 
   insertAttendanceSchema,
+  insertFileSchema,
   studentFormSchema,
   attendanceFormSchema,
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import { setupAuth } from "./auth";
+import { requireAuth, requireTeacher, requireOwnershipOrTeacher, validateInput } from "./middleware";
+import { upload, deleteFileFromDisk } from "./upload";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes and middleware
   setupAuth(app);
-  // Student routes
-  app.get("/api/students", async (req: Request, res: Response) => {
+  // Add global middleware for input validation
+  app.use('/api', validateInput);
+
+  // Student routes - Teachers can manage all students, students can only view their own data
+  app.get("/api/students", requireTeacher, async (req: Request, res: Response) => {
     try {
       const students = await storage.getStudents();
       return res.json(students);
@@ -25,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/students/:id", async (req: Request, res: Response) => {
+  app.get("/api/students/:id", requireOwnershipOrTeacher, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -44,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/students", async (req: Request, res: Response) => {
+  app.post("/api/students", requireTeacher, async (req: Request, res: Response) => {
     try {
       const validatedData = studentFormSchema.safeParse(req.body);
       
@@ -67,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/students/:id", async (req: Request, res: Response) => {
+  app.put("/api/students/:id", requireTeacher, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -102,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/students/:id", async (req: Request, res: Response) => {
+  app.delete("/api/students/:id", requireTeacher, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -121,8 +128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Class routes
-  app.get("/api/classes", async (req: Request, res: Response) => {
+  // Class routes - Only teachers can manage classes
+  app.get("/api/classes", requireAuth, async (req: Request, res: Response) => {
     try {
       const classes = await storage.getClasses();
       return res.json(classes);
@@ -132,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/classes", async (req: Request, res: Response) => {
+  app.post("/api/classes", requireTeacher, async (req: Request, res: Response) => {
     try {
       const validatedData = insertClassSchema.safeParse(req.body);
       
@@ -149,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/classes/:id", async (req: Request, res: Response) => {
+  app.put("/api/classes/:id", requireTeacher, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -176,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/classes/:id", async (req: Request, res: Response) => {
+  app.delete("/api/classes/:id", requireTeacher, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -195,8 +202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Attendance routes
-  app.get("/api/attendance", async (req: Request, res: Response) => {
+  // Attendance routes - Teachers can manage all attendance, students can view their own
+  app.get("/api/attendance", requireAuth, async (req: Request, res: Response) => {
     try {
       const { date, studentId, className } = req.query;
       
@@ -225,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/attendance", async (req: Request, res: Response) => {
+  app.post("/api/attendance", requireTeacher, async (req: Request, res: Response) => {
     try {
       const validatedData = attendanceFormSchema.safeParse(req.body);
       
@@ -248,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/attendance/:id", async (req: Request, res: Response) => {
+  app.put("/api/attendance/:id", requireTeacher, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -314,6 +321,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to get attendance stats:", error);
       return res.status(500).json({ message: "Failed to generate attendance report" });
+    }
+  });
+
+  // File upload routes
+  app.post("/api/upload", requireAuth, upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileData = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        uploadedBy: req.user!.id,
+        filePath: req.file.path
+      };
+
+      const file = await storage.createFile(fileData);
+      return res.status(201).json(file);
+    } catch (error) {
+      console.error("Failed to upload file:", error);
+      return res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
+
+  app.get("/api/files", requireAuth, async (req: Request, res: Response) => {
+    try {
+      let files;
+      
+      // Teachers can see all files, students can only see their own
+      if (req.user!.role === "teacher") {
+        files = Array.from((storage as any).files.values());
+      } else {
+        files = await storage.getFilesByUser(req.user!.id);
+      }
+      
+      return res.json(files);
+    } catch (error) {
+      console.error("Failed to get files:", error);
+      return res.status(500).json({ message: "Failed to retrieve files" });
+    }
+  });
+
+  app.get("/api/files/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+      
+      const file = await storage.getFile(id);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check ownership - students can only access their own files
+      if (req.user!.role !== "teacher" && file.uploadedBy !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      return res.sendFile(path.resolve(file.filePath));
+    } catch (error) {
+      console.error("Failed to get file:", error);
+      return res.status(500).json({ message: "Failed to retrieve file" });
+    }
+  });
+
+  app.delete("/api/files/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+      
+      const file = await storage.getFile(id);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check ownership - students can only delete their own files
+      if (req.user!.role !== "teacher" && file.uploadedBy !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const success = await storage.deleteFile(id);
+      if (success) {
+        // Delete file from disk
+        deleteFileFromDisk(file.filePath);
+        return res.status(204).send();
+      } else {
+        return res.status(404).json({ message: "File not found" });
+      }
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+      return res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+
+  // Student-specific routes for viewing their own data
+  app.get("/api/my-attendance", requireAuth, async (req: Request, res: Response) => {
+    try {
+      // If user is a student, find their student record and get attendance
+      if (req.user!.role === "student") {
+        const student = await storage.getStudentByStudentId(req.user!.studentId || "");
+        if (!student) {
+          return res.status(404).json({ message: "Student record not found" });
+        }
+        
+        const attendance = await storage.getAttendanceForStudent(student.id);
+        return res.json(attendance);
+      } else {
+        // Teachers can see all attendance (redirect to regular attendance endpoint)
+        return res.redirect("/api/attendance");
+      }
+    } catch (error) {
+      console.error("Failed to get student attendance:", error);
+      return res.status(500).json({ message: "Failed to retrieve attendance" });
+    }
+  });
+
+  app.get("/api/my-profile", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role === "student") {
+        const student = await storage.getStudentByStudentId(req.user!.studentId || "");
+        if (!student) {
+          return res.status(404).json({ message: "Student profile not found" });
+        }
+        return res.json({ user: req.user, student });
+      } else {
+        return res.json({ user: req.user });
+      }
+    } catch (error) {
+      console.error("Failed to get profile:", error);
+      return res.status(500).json({ message: "Failed to retrieve profile" });
     }
   });
 
