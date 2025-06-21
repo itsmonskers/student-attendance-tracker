@@ -193,7 +193,6 @@ export default function AuthPage() {
                             <SelectContent>
                               <SelectItem value="student">Student</SelectItem>
                               <SelectItem value="teacher">Teacher</SelectItem>
-                              <SelectItem value="admin">Administrator</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

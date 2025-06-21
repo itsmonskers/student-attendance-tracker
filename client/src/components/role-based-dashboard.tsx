@@ -14,11 +14,11 @@ export default function RoleBasedDashboard() {
     );
   }
 
-  // Show student dashboard for students, teacher dashboard for teachers
+  // Show student dashboard for students, teacher dashboard for teachers and admins
   if (user?.role === "student") {
     return <StudentDashboard />;
   }
 
-  // Default to teacher dashboard for teachers and any other roles
+  // Default to teacher dashboard for teachers and admins
   return <Dashboard />;
 }

@@ -22,7 +22,21 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
+  // Handle admin account with plain text password
+  if (stored === "admin123") {
+    return supplied === "admin123";
+  }
+  
+  // Handle regular hashed passwords
+  if (!stored.includes(".")) {
+    return false;
+  }
+  
   const [hashed, salt] = stored.split(".");
+  if (!hashed || !salt) {
+    return false;
+  }
+  
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
@@ -71,22 +85,14 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Prevent admin registration
+      if (req.body.username === "admin.access@school.com" || req.body.role === "admin") {
+        return res.status(400).json({ message: "Admin accounts cannot be registered" });
+      }
+
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
-      }
-
-      // Handle admin login via fixed credentials
-      if (req.body.username === "admin.access@school.com" && req.body.password === "admin123") {
-        const adminUser = await storage.getUserByUsername("admin.access@school.com");
-        if (adminUser) {
-          req.login(adminUser, (err) => {
-            if (err) return next(err);
-            const { password, ...userWithoutPassword } = adminUser;
-            return res.status(200).json(userWithoutPassword);
-          });
-          return;
-        }
       }
 
       // Ensure role defaults to student if not provided

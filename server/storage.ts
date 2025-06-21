@@ -163,13 +163,12 @@ export class MemStorage implements IStorage {
     });
   }
 
-  private seedAdminAccount() {
+  private async seedAdminAccount() {
     // Create fixed admin account with email: admin.access@school.com, password: admin123
-    // Note: In production, this should use proper password hashing
     const adminUser: User = {
       id: 999, // Fixed ID for admin
       username: 'admin.access@school.com',
-      password: 'admin123', // This will be hashed by the auth system
+      password: 'admin123', // Plain text for admin account (handled specially in auth)
       fullName: 'System Administrator',
       role: 'admin',
       email: 'admin.access@school.com',
